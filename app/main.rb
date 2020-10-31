@@ -24,14 +24,20 @@ def tick args
 
   # set the score
   args.state.score        ||= 0
-  args.state.teleports    ||= 3
+  args.state.teleports    ||= 10
 
   # set the instructions
   args.state.instructions ||= "Get to the red goal! Use arrow keys to move. Spacebar to teleport (use them carefully)!"
 
+  # args.state.sprite_frame == state.count_down.idiv(4).mod(6)
+
   # ====================================================
   # render the game
   # ====================================================
+  args.outputs.labels  << { x: args.grid.w.half, y: args.grid.h - 100,
+                            text: args.state.count_down.idiv(4).mod(6),
+                            alignment_enum: 1 }
+
   args.outputs.labels  << { x: args.grid.w.half, y: args.grid.h - 10,
                             text: args.state.instructions,
                             alignment_enum: 1 }
@@ -61,7 +67,7 @@ def tick args
                             y: args.state.player.y,
                             w: args.state.player.w,
                             h: args.state.player.h,
-                            path: 'sprites/square-green.png' }
+                            path: "sprites/dragon-#{args.state.count_down.idiv(4).mod(6)}.png" }
 
   args.outputs.labels << { x: args.state.player.x + 10,
                            y: args.state.player.y + 40,

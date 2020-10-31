@@ -1,4 +1,4 @@
-#devid=myname
+#devid=meltinglight
 #devtitle=My Name
 #gameid=mygame
 #gametitle=My Game
