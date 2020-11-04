@@ -20,7 +20,7 @@ def tick args
                                 h: 100 }
 
   # set the player movement speed
-  args.state.player_speed ||= 10
+  args.state.player_speed ||= 1
 
   # set the score
   args.state.score        ||= 0
@@ -29,17 +29,30 @@ def tick args
   # set the instructions
   args.state.instructions ||= "Get to the red goal! Use arrow keys to move. Spacebar to teleport (use them carefully)!"
 
-  # args.state.sprite_frame == state.count_down.idiv(4).mod(6)
+  # sprite frame
+  args.state.sprite_frame = args.state.tick_count.idiv(4).mod(6)
+
+  # set direction speed
+  args.state.dir_x ||= 0
+  args.state.dir_y ||= 0
 
   # ====================================================
   # render the game
   # ====================================================
+  args.outputs.labels  << { x: args.grid.w.half, y: args.grid.h - 120,
+                            text: "args.state.dir_y: #{args.state.dir_y}",
+                            alignment_enum: 1 }
+
   args.outputs.labels  << { x: args.grid.w.half, y: args.grid.h - 100,
-                            text: args.state.count_down.idiv(4).mod(6),
+                            text: args.state.sprite_frame,
                             alignment_enum: 1 }
 
   args.outputs.labels  << { x: args.grid.w.half, y: args.grid.h - 10,
                             text: args.state.instructions,
+                            alignment_enum: 1 }
+
+  args.outputs.labels  << { x: args.grid.w.half, y: args.grid.h - 140,
+                            text: "args.state.dir_x: #{args.state.dir_x}",
                             alignment_enum: 1 }
 
   # check if it's game over. if so, then render game over
@@ -62,24 +75,12 @@ def tick args
                             text: "score: #{args.state.score}",
                             alignment_enum: 1 }
 
-  # render the player with teleport count
-  args.outputs.sprites << { x: args.state.player.x,
-                            y: args.state.player.y,
-                            w: args.state.player.w,
-                            h: args.state.player.h,
-                            path: "sprites/dragon-#{args.state.count_down.idiv(4).mod(6)}.png" }
-
-  args.outputs.labels << { x: args.state.player.x + 10,
-                           y: args.state.player.y + 40,
-                           text: "teleports: #{args.state.teleports}",
-                           alignment_enum: 1, size_enum: -2 }
-
   # render the target
   args.outputs.sprites << { x: args.state.target.x,
                             y: args.state.target.y,
                             w: args.state.target.w,
                             h: args.state.target.h,
-                            path: 'sprites/square-red.png' }
+                            path: 'sprites/icon.png' }
 
   # ====================================================
   # run simulation
@@ -94,34 +95,72 @@ def tick args
   # ====================================================
   # if it isn't game over let them move
   if !game_over? args
-    dir_y = 0
-    dir_x = 0
-
-    # determine the change horizontally
-    if args.inputs.keyboard.up
-      dir_y += args.state.player_speed
-    elsif args.inputs.keyboard.down
-      dir_y -= args.state.player_speed
-    end
+    # global variables
+    # dir_y = 0
+    # dir_x = 0
 
     # determine the change vertically
+    if args.inputs.keyboard.up
+    #  dir_y += args.state.player_speed
+      if args.state.dir_y < 10
+        args.state.dir_y += args.state.player_speed
+      end
+    elsif args.inputs.keyboard.down
+    #  dir_y -= args.state.player_speed
+      if args.state.dir_y > -10
+        args.state.dir_y -= args.state.player_speed
+      end
+    end
+
+    # determine the change horizontally
     if args.inputs.keyboard.left
-      dir_x -= args.state.player_speed
+    #  dir_x -= args.state.player_speed
+      if args.state.dir_x > -10
+        args.state.dir_x -= args.state.player_speed
+      end
     elsif args.inputs.keyboard.right
-      dir_x += args.state.player_speed
+    #  dir_x += args.state.player_speed
+      if args.state.dir_x < 10
+        args.state.dir_x += args.state.player_speed
+      end
     end
 
     # determine if teleport can be used
-    if args.inputs.keyboard.key_down.space && args.state.teleports > 0
-      args.state.teleports -= 1
-      dir_x *= 20
-      dir_y *= 20
+    # if args.inputs.keyboard.key_down.space && args.state.teleports > 0
+    #  args.state.teleports -= 1
+    #  dir_x *= 20
+    #  dir_y *= 20
+    # end
+
+    if args.state.dir_x < 0
+      args.outputs.sprites << { x: args.state.player.x,
+                                y: args.state.player.y,
+                                w: args.state.player.w,
+                                h: args.state.player.h,
+                                path: "sprites/dragon-left-#{args.state.sprite_frame}.png" }
+    elsif args.state.dir_x > 0
+      args.outputs.sprites << { x: args.state.player.x,
+                                y: args.state.player.y,
+                                w: args.state.player.w,
+                                h: args.state.player.h,
+                                path: "sprites/dragon-right-#{args.state.sprite_frame}.png" }
+    else
+      args.outputs.sprites << { x: args.state.player.x,
+                                y: args.state.player.y,
+                                w: args.state.player.w,
+                                h: args.state.player.h,
+                                path: "sprites/dragon-right-#{args.state.sprite_frame}.png" }
     end
 
     # apply change to player
-    args.state.player.x += dir_x
-    args.state.player.y += dir_y
+    args.state.player.x += args.state.dir_x
+    args.state.player.y += args.state.dir_y
   else
+    args.outputs.sprites << { x: args.state.player.x,
+                                y: args.state.player.y,
+                                w: args.state.player.w,
+                                h: args.state.player.h,
+                                path: "sprites/dragon-right-#{args.state.sprite_frame}.png" }
     # if r is pressed, reset the game
     if args.inputs.keyboard.key_down.r
       $gtk.reset
