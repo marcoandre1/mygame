@@ -1,5 +1,8 @@
 # full documenation is at http://docs.dragonruby.org
 # be sure to come to the discord if you hit any snags: http://discord.dragonruby.org
+
+# The tick method is called by DragonRuby every frame
+# args contains all the information regarding the game.
 def tick args
   # ====================================================
   # initialize default variables
@@ -61,50 +64,47 @@ def tick args
   # ====================================================
   # render the game
   # ====================================================
-  args.outputs.labels  << { x: args.grid.w.half, y: args.grid.h - 120,
-                            text: "args.state.tick_count: #{args.state.tick_count}",
-                            alignment_enum: 1 }
-
-  args.outputs.labels  << { x: args.grid.w.half, y: args.grid.h - 100,
-                            text: args.state.sprite_frame,
-                            alignment_enum: 1 }
-
-  args.outputs.labels  << { x: args.grid.w.half, y: args.grid.h - 10,
-                            text: args.state.instructions,
-                            alignment_enum: 1 }
-
-  args.outputs.labels  << { x: args.grid.w.half, y: args.grid.h - 140,
-                            text: "args.state.border_height: #{args.state.border_height}",
-                            alignment_enum: 1 }
-
-  args.outputs.labels  << { x: args.grid.w.half, y: args.grid.h - 160,
-                            text: "rand args.state.border_width: #{args.state.target_x}",
-                            alignment_enum: 1 }
-
   # check if it's game over. if so, then render game over
   # otherwise render the current time left
   if game_over? args
-    args.outputs.labels  << { x: args.grid.w.half,
-                              y: args.grid.h - 40,
-                              text: "game over! (press r to start over)",
-                              alignment_enum: 1 }
-                              
-    args.outputs.labels  << { x: args.grid.w.half,
-                              y: args.grid.h - 200,
-                              text: "time left: #{(args.state.count_down.idiv 60) + 1}",
-                              alignment_enum: 1 }
+    # render label "Game over!"
+    args.outputs.primitives << { x: args.grid.w.half,
+                                 y: args.grid.h.half + 50,
+                                 text: "Game over!",
+                                 size_enum: 10,
+                                 alignment_enum: 1,
+                                 r: 255,
+                                 g: 0,
+                                 b: 0,
+                                 a: 255,
+                                 font: "fonts/manaspc.ttf" }.label
+
+    # render the score
+    args.outputs.labels  << { x: args.grid.w.half, y: args.grid.h.half,
+                              text: "Total score: #{args.state.score}",
+                              size_enum: 10, alignment_enum: 1,
+                              r: 0, g: 0, b: 255, a: 255, font: "fonts/manaspc.ttf" }
+
+    # render the label "Press r to start over"
+    args.outputs.labels  << { x: args.grid.w.half, y: args.grid.h.half - 50,
+                              text: "(Press r to start over)",
+                              size_enum: 10, alignment_enum: 1,
+                              r: 0, g: 200, b: 255, a: 255, font: "fonts/manaspc.ttf" }
   else
+    args.outputs.labels  << { x: args.grid.w.half, y: args.grid.h - 10,
+                              text: args.state.instructions,
+                              alignment_enum: 1 }
+
     args.outputs.labels  << { x: args.grid.w.half,
                               y: args.grid.h - 40,
                               text: "time left: #{(args.state.count_down.idiv 60) + 1}",
+                              alignment_enum: 1 }
+
+    # render the score
+    args.outputs.labels  << { x: args.grid.w.half, y: args.grid.h - 70,
+                              text: "score: #{args.state.score}",
                               alignment_enum: 1 }
   end
-
-  # render the score
-  args.outputs.labels  << { x: args.grid.w.half,
-                            y: args.grid.h - 70,
-                            text: "score: #{args.state.score}",
-                            alignment_enum: 1 }
 
   # render the target
   args.outputs.sprites << { x: args.state.target.x,
@@ -127,7 +127,7 @@ def tick args
   # ====================================================
 
   # count down calculation
-  # substract one to 
+  # substract one to each frame
   args.state.count_down -= 1
   args.state.count_down = -1 if args.state.count_down < -1
 
