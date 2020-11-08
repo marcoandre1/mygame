@@ -103,7 +103,7 @@ def tick args
 
     #     [ X ,  Y,    TEXT,   SIZE, ALIGN, RED, GREEN, BLUE, ALPHA, FONT STYLE]
     args.outputs.labels << [args.grid.left.shift_right(10), args.grid.bottom.shift_up(95), "Code:   https://github.com/marcoandre1/mygame", 3, 0, 255, 255, 255, 200]
-    args.outputs.labels << [args.grid.left.shift_right(10), args.grid.bottom.shift_up(65), "Art:    @mobypixel", 3, 0, 255, 255, 255, 200]
+    args.outputs.labels << [args.grid.left.shift_right(10), args.grid.bottom.shift_up(65), "Art:    @mobypixel (from flappy-dragon)", 3, 0, 255, 255, 255, 200]
     args.outputs.labels << [args.grid.left.shift_right(10), args.grid.bottom.shift_up(35), "Engine: DragonRuby GTK", 3, 0, 255, 255, 255, 200]
 
     # change the difficulty if the player hits tab
@@ -160,30 +160,38 @@ def tick args
                               size_enum: 10, alignment_enum: 1,
                               r: 255, g: 200, b: 255, a: 255, font: "fonts/manaspc.ttf" }
   else
-    # game is not over but
+    # game is not over
     # check if we are in the game menu
     if !game_menu? args
       # Show warning label is maximum speed is over 10
       if args.state.player_maximum_speed > 10
         args.outputs.labels  << { x: args.grid.left.shift_right(10),
                                   y: args.grid.h - 10,
-                                  text: "Be careful, hitting a wall increases you maximum speed",
+                                  text: "Be careful, hitting a wall increases you maximum speed!",
                                   alignment_enum: 0, r: 255, g: 0, b: 0 }
       end
 
-      # show time left
-      args.outputs.labels  << { x: args.grid.left.shift_right(10),
-                                y: args.grid.h - 40,
-                                text: "Time left: #{(args.state.count_down.idiv 60) + 1}",
-                                alignment_enum: 0 }
-
       # render the number of DragonRuby icons
-      args.outputs.labels  << { x: args.grid.left.shift_right(10), y: args.grid.h - 70,
+      args.outputs.labels  << { x: args.grid.left.shift_right(10), y: args.grid.h - 40,
                                 text: "DragonRuby icons: #{args.state.score}/#{args.state.score_win}",
                                 alignment_enum: 0 }
 
-      # render bakcground
+      # show time left
+      args.outputs.labels  << { x: args.grid.left.shift_right(10),
+                                y: args.grid.h - 70,
+                                text: "Time left: #{(args.state.count_down.idiv 60) + 1}",
+                                alignment_enum: 0 }
+
+      # render game background
       args.outputs.sprites << [args.state.border_corner_x, args.state.border_corner_y, args.state.border_width, args.state.border_height, 'sprites/background.png']
+      args.outputs.sprites << [args.state.border_corner_x, args.state.border_corner_y, args.state.border_width, args.state.border_height, 'sprites/parallax_back.png']
+      args.outputs.sprites << [args.state.border_corner_x, args.state.border_corner_y, args.state.border_width, args.state.border_height, 'sprites/parallax_middle.png']
+      args.outputs.sprites << [args.state.border_corner_x, args.state.border_corner_y, args.state.border_width, args.state.border_height, 'sprites/parallax_front.png']
+      if args.state.player_maximum_speed > 10
+        args.outputs.sprites << [args.grid.left.shift_right(10), args.grid.h - 30, 545, 20, 'sprites/square-gray.png', 0, 200]
+      end
+      args.outputs.sprites << [args.grid.left.shift_right(10), args.grid.h - 60, 220, 20, 'sprites/square-gray.png', 0, 200]
+      args.outputs.sprites << [args.grid.left.shift_right(10), args.grid.h - 90, 130, 20, 'sprites/square-gray.png', 0, 200]
 
       # render the target
       args.outputs.sprites << { x: args.state.target.x, y: args.state.target.y,
@@ -284,14 +292,11 @@ def tick args
     args.state.player.y += args.state.dir_y
   else
     # render game over background
-    args.outputs.solids << { x: args.state.border_corner_x, 
-                            y: args.state.border_corner_y, 
-                            w: args.state.border_width, 
-                            h: args.state.border_height, 
-                            r: 0, 
-                            g: 0, 
-                            b: 0,
-                            a: 128 }
+    args.outputs.sprites << [args.state.border_corner_x, args.state.border_corner_y, args.state.border_width, args.state.border_height, 'sprites/background.png']
+    args.outputs.sprites << [args.state.border_corner_x, args.state.border_corner_y, args.state.border_width, args.state.border_height, 'sprites/parallax_back.png']
+    args.outputs.sprites << [args.state.border_corner_x, args.state.border_corner_y, args.state.border_width, args.state.border_height, 'sprites/parallax_middle.png']
+    args.outputs.sprites << [args.state.border_corner_x, args.state.border_corner_y, args.state.border_width, args.state.border_height, 'sprites/parallax_front.png']
+    args.outputs.sprites << [args.state.border_corner_x, args.state.border_corner_y, args.state.border_width, args.state.border_height, 'sprites/square-gray.png', 0, 128]
 
     # keep the dragon flying in the good direction when game over
     if args.state.dir_x < 0
