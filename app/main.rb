@@ -22,6 +22,28 @@ def tick args
                                 w: args.state.target_width,
                                 h: args.state.target_height }
 
+  # set the width and the height of the left guard
+  args.state.guard_width  ||= 100
+  args.state.guard_height ||= 100
+
+  # set the initial position of the left guard
+  args.state.guard_left   ||= { x: args.grid.w.half - args.state.guard_width / 2 - 300,
+                                y: args.grid.h.half - args.state.guard_height / 2,
+                                w: args.state.guard_width,
+                                h: args.state.guard_height }
+
+  # set the initial position of the right guard
+  args.state.guard_right   ||= { x: args.grid.w.half - args.state.guard_width / 2 + 300,
+                                y: args.grid.h.half - args.state.guard_height / 2,
+                                w: args.state.guard_width,
+                                h: args.state.guard_height }
+
+  # set the guard speed
+  args.state.guard_speed ||= 1
+
+  # set the guard maxium speed
+  args.state.guard_maximum_speed ||= 10
+
   # set the width and the height of the player
   args.state.player_width  ||= 100
   args.state.player_height ||= 100
@@ -64,6 +86,10 @@ def tick args
   # set random coordinates for the target
   args.state.target_x ||= args.state.border_corner_x + (rand (args.state.border_width - args.state.player_width))
   args.state.target_y ||= args.state.border_corner_y + (rand (args.state.border_height - args.state.player_height))
+
+  # set y coordinate of the left guard and the right guard
+  args.state.guard_left_y  ||= 10
+  args.state.guard_right_y ||= -10
 
   # ====================================================
   # render the game
@@ -197,6 +223,16 @@ def tick args
       args.outputs.sprites << { x: args.state.target.x, y: args.state.target.y,
                                 w: args.state.target.w, h: args.state.target.h,
                                 path: 'sprites/icon.png' }
+
+      # render the left guard
+      args.outputs.sprites << { x: args.state.guard_left.x, y: args.state.guard_left.y,
+                                w: args.state.guard_left.w, h: args.state.guard_left.h,
+                                path: 'sprites/circle-blue.png' }
+
+      # render the left guard
+      args.outputs.sprites << { x: args.state.guard_right.x, y: args.state.guard_right.y,
+                                w: args.state.guard_right.w, h: args.state.guard_right.h,
+                                path: 'sprites/circle-green.png' }
     end
   end
 
@@ -229,6 +265,19 @@ def tick args
   # ====================================================
   # if it isn't game over let them move
   if !game_over? args
+    # collision with a wall will make the guard bounce back
+    if args.state.guard_left.y < args.state.border_corner_y
+      args.state.guard_left_y *= -1
+    elsif args.state.guard_left.y > args.grid.h - args.state.guard_height - args.state.border_corner_y
+      args.state.guard_left_y *= -1
+    end
+
+    # collision with a wall will make the guard bounce back
+    if args.state.guard_right.y < args.state.border_corner_y
+      args.state.guard_right_y *= -1
+    elsif args.state.guard_right.y > args.grid.h - args.state.guard_height - args.state.border_corner_y
+      args.state.guard_right_y *= -1
+    end
 
     # collision with a wall will make the player bounce and increase maximum speed by one
     if args.state.player.x < args.state.border_corner_x
@@ -287,6 +336,10 @@ def tick args
                                 path: "sprites/dragon-right-#{args.state.sprite_frame}.png" }
     end
 
+    # apply change to left and the right guard
+    args.state.guard_left.y  += args.state.guard_left_y
+    args.state.guard_right.y += args.state.guard_right_y
+
     # apply change to player
     args.state.player.x += args.state.dir_x
     args.state.player.y += args.state.dir_y
@@ -336,7 +389,6 @@ def tick args
 
   # calculate new score if the player is at goal
   if !game_over? args
-
     # if the player is at the goal, then move the goal
     if args.state.player.intersect_rect? args.state.target
       # increment the goal
