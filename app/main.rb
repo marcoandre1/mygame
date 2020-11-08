@@ -40,13 +40,14 @@ def tick args
 
   # set the score
   args.state.score        ||= 0
+  args.state.score_win    ||= 10
 
   # set the instructions
-  args.state.instructions_1 ||= "Get to the red goal!"
+  args.state.instructions_1 ||= "Get #{args.state.score_win} DragonRuby icons!"
   args.state.instructions_2 ||= "Use arrow keys to move."
 
   # set the instructions
-  args.state.welcome ||= "Press enter to start"
+  args.state.welcome ||= "Press [Enter] to start"
 
   # sprite frame
   args.state.sprite_frame = args.state.tick_count.idiv(4).mod(6)
@@ -69,9 +70,9 @@ def tick args
   # render the game
   # ====================================================
   # check if the game has started. if so, 
-  if start_game? args
+  if game_start? args
     args.outputs.primitives << { x: args.grid.w.half, y: args.grid.h.half + 75,
-                                 text: "Dragon Quest on Steroids!",
+                                 text: "Dragon Quest on Steroids",
                                  size_enum: 10, alignment_enum: 1,
                                  r: 255, g: 0, b: 0, a: 255,
                                  font: "fonts/manaspc.ttf" }.label
@@ -84,7 +85,7 @@ def tick args
     args.outputs.labels  << { x: args.grid.w.half, y: args.grid.h.half - 25,
                               text: args.state.instructions_2,
                               size_enum: 10, alignment_enum: 1,
-                              r: 0, g: 200, b: 255, a: 255, font: "fonts/manaspc.ttf" }
+                              r: 0, g: 120, b: 255, a: 255, font: "fonts/manaspc.ttf" }
 
     args.outputs.labels  << { x: args.grid.w.half, y: args.grid.h.half - 75,
                               text: args.state.welcome,
@@ -94,6 +95,11 @@ def tick args
     args.outputs.solids  << { x: args.state.border_corner_x, y: args.state.border_corner_y, 
                               w: args.state.border_width, h: args.state.border_height, 
                               r: 0, g: 0, b: 0,a: 200 }
+
+    #     [ X ,  Y,    TEXT,   SIZE, ALIGN, RED, GREEN, BLUE, ALPHA, FONT STYLE]
+    args.outputs.labels << [args.grid.left.shift_right(10), args.grid.bottom.shift_up(95), "Code:   https://github.com/marcoandre1/mygame", 3, 0, 255, 255, 255, 200]
+    args.outputs.labels << [args.grid.left.shift_right(10), args.grid.bottom.shift_up(65), "Art:    @mobypixel", 3, 0, 255, 255, 255, 200]
+    args.outputs.labels << [args.grid.left.shift_right(10), args.grid.bottom.shift_up(35), "Engine: DragonRuby GTK", 3, 0, 255, 255, 255, 200]
 
     if args.inputs.keyboard.key_down.enter
       $gtk.reset
@@ -105,41 +111,59 @@ def tick args
   # check if it's game over. if so, then render game over
   # otherwise render the current time left
   if game_over? args
-    # render label "Game over!"
-    args.outputs.primitives << { x: args.grid.w.half, y: args.grid.h.half + 75,
-                                 text: "Game over!",
-                                 size_enum: 10, alignment_enum: 1,
-                                 r: 255, g: 0, b: 0, a: 255,
-                                 font: "fonts/manaspc.ttf" }.label
+    if args.state.score == args.state.score_win
+      # render label "You win!"
+      args.outputs.primitives << { x: args.grid.w.half, y: args.grid.h.half + 75,
+                                   text: "Game over! You win!",
+                                   size_enum: 10, alignment_enum: 1,
+                                   r: 0, g: 255, b: 0, a: 255,
+                                   font: "fonts/manaspc.ttf" }.label
+    else
+      # render label "Game over!"
+      args.outputs.primitives << { x: args.grid.w.half, y: args.grid.h.half + 75,
+                                   text: "Game over! You loose!",
+                                   size_enum: 10, alignment_enum: 1,
+                                   r: 255, g: 0, b: 0, a: 255,
+                                   font: "fonts/manaspc.ttf" }.label
+    end
 
     # render total score
     args.outputs.labels  << { x: args.grid.w.half, y: args.grid.h.half + 25,
-                              text: "Total score: #{args.state.score}",
+                              text: "DragonRuby icons: #{args.state.score}/#{args.state.score_win}",
                               size_enum: 10, alignment_enum: 1,
                               r: 0, g: 0, b: 255, a: 255, font: "fonts/manaspc.ttf" }
 
     # render label "(Press r to start over)"
     args.outputs.labels  << { x: args.grid.w.half, y: args.grid.h.half - 25,
-                              text: "Press r to start over",
+                              text: "Press [r] to start over",
                               size_enum: 10, alignment_enum: 1,
                               r: 0, g: 200, b: 255, a: 255, font: "fonts/manaspc.ttf" }
 
     # render label "(Press r to start over)"
     args.outputs.labels  << { x: args.grid.w.half, y: args.grid.h.half - 75,
-                              text: "Press enter to start over",
+                              text: "Press [Enter] to go back to menu",
                               size_enum: 10, alignment_enum: 1,
                               r: 0, g: 200, b: 200, a: 255, font: "fonts/manaspc.ttf" }
   else
-    if !start_game? args
-      args.outputs.labels  << { x: args.grid.w.half,
+    if !game_start? args
+      if args.state.player_maximum_speed > 10
+        args.outputs.labels  << { x: args.grid.left.shift_right(10),
+                                  y: args.grid.h - 10,
+                                  text: "Be careful, hitting a wall increases you maximum speed",
+                                  alignment_enum: 0, r: 255, g: 0, b: 0 }
+      end
+
+      args.outputs.labels  << { x: args.grid.left.shift_right(10),
                                 y: args.grid.h - 40,
-                                text: "time left: #{(args.state.count_down.idiv 60) + 1}",
-                                alignment_enum: 1 }
+                                text: "Time left: #{(args.state.count_down.idiv 60) + 1}",
+                                alignment_enum: 0 }
 
       # render the score
-      args.outputs.labels  << { x: args.grid.w.half, y: args.grid.h - 70,
-                                text: "score: #{args.state.score}",
-                                alignment_enum: 1 }
+      args.outputs.labels  << { x: args.grid.left.shift_right(10), y: args.grid.h - 70,
+                                text: "DragonRuby icons: #{args.state.score}/#{args.state.score_win}",
+                                alignment_enum: 0 }
+
+      args.outputs.sprites << [args.state.border_corner_x, args.state.border_corner_y, args.state.border_width, args.state.border_height, 'sprites/background.png']
 
       # render the target
       args.outputs.sprites << { x: args.state.target.x, y: args.state.target.y,
@@ -161,7 +185,7 @@ def tick args
   # run simulation
   # ====================================================
   # if !args.state.count_down > 20 * 60 
-  if !start_game? args
+  if !game_start? args
     # count down calculation
     # if you look at the label "time left" we are doing a full division of the countdown:
     #   args.state.count_down.idiv 60
@@ -196,18 +220,20 @@ def tick args
       args.state.player_maximum_speed += 1
     end
 
-    # determine the change vertically
-    if args.inputs.keyboard.up && args.state.dir_y < args.state.player_maximum_speed
-      args.state.dir_y += args.state.player_speed
-    elsif args.inputs.keyboard.down && args.state.dir_y > -args.state.player_maximum_speed
-      args.state.dir_y -= args.state.player_speed
-    end
+    if !game_start? args
+      # determine the change vertically
+      if args.inputs.keyboard.up && args.state.dir_y < args.state.player_maximum_speed 
+        args.state.dir_y += args.state.player_speed
+      elsif args.inputs.keyboard.down && args.state.dir_y > -args.state.player_maximum_speed
+        args.state.dir_y -= args.state.player_speed
+      end
 
-    # determine the change horizontally
-    if args.inputs.keyboard.left && args.state.dir_x > -args.state.player_maximum_speed
-      args.state.dir_x -= args.state.player_speed
-    elsif args.inputs.keyboard.right && args.state.dir_x < args.state.player_maximum_speed
-      args.state.dir_x += args.state.player_speed
+      # determine the change horizontally
+      if args.inputs.keyboard.left && args.state.dir_x > -args.state.player_maximum_speed
+        args.state.dir_x -= args.state.player_speed
+      elsif args.inputs.keyboard.right && args.state.dir_x < args.state.player_maximum_speed
+        args.state.dir_x += args.state.player_speed
+      end
     end
 
     # change the direction of the dragon according to his direction
@@ -283,12 +309,17 @@ def tick args
       # increment the goal
       args.state.score += 1
 
-      # random coordinates for target
-      args.state.target_x = args.state.border_corner_x + (rand (args.state.border_width - args.state.player_width))
-      args.state.target_y = args.state.border_corner_y + (rand (args.state.border_height - args.state.player_height))
+      # check if win else keep giving random DragonRuby icons
+      if args.state.score == args.state.score_win
+        args.state.count_down = 0
+      else
+        # random coordinates for target
+        args.state.target_x = args.state.border_corner_x + (rand (args.state.border_width - args.state.player_width))
+        args.state.target_y = args.state.border_corner_y + (rand (args.state.border_height - args.state.player_height))
 
-      # move the goal to a random location
-      args.state.target = { x: (args.state.target_x), y: (args.state.target_y), w: args.state.target_width, h: args.state.target_height }
+        # move the goal to a random location
+        args.state.target = { x: (args.state.target_x), y: (args.state.target_y), w: args.state.target_width, h: args.state.target_height }
+      end
     end
   end
 end
@@ -297,7 +328,7 @@ def game_over? args
   args.state.count_down < 0
 end
 
-def start_game? args
+def game_start? args
   args.state.count_down == 21 * 60
 end
 
