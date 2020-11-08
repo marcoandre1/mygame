@@ -9,7 +9,7 @@ def tick args
   # ====================================================
 
   # ruby has an operator called ||= which means "only initialize this if it's nil"
-  args.state.count_down   ||= 20 * 60 # set the count down to 20 seconds
+  args.state.count_down   ||= 21 * 60 # set the count down to 20 seconds
   # the game renders in 60 fps: 20s * 60fps = 1200 frames
 
   # set the width and the height of the target
@@ -27,8 +27,8 @@ def tick args
   args.state.player_height ||= 100
 
   # set the initial position of the player
-  args.state.player       ||= { x: 250,
-                                y: 250,
+  args.state.player       ||= { x: 100,
+                                y: 100,
                                 w: args.state.player_width,
                                 h: args.state.player_height }
 
@@ -42,7 +42,11 @@ def tick args
   args.state.score        ||= 0
 
   # set the instructions
-  args.state.instructions ||= "Get to the red goal! Use arrow keys to move."
+  args.state.instructions_1 ||= "Get to the red goal!"
+  args.state.instructions_2 ||= "Use arrow keys to move."
+
+  # set the instructions
+  args.state.welcome ||= "Press enter to start"
 
   # sprite frame
   args.state.sprite_frame = args.state.tick_count.idiv(4).mod(6)
@@ -64,54 +68,85 @@ def tick args
   # ====================================================
   # render the game
   # ====================================================
+  # check if the game has started. if so, 
+  if start_game? args
+    args.outputs.primitives << { x: args.grid.w.half, y: args.grid.h.half + 75,
+                                 text: "Dragon Quest on Steroids!",
+                                 size_enum: 10, alignment_enum: 1,
+                                 r: 255, g: 0, b: 0, a: 255,
+                                 font: "fonts/manaspc.ttf" }.label
+
+    args.outputs.labels  << { x: args.grid.w.half, y: args.grid.h.half + 25,
+                              text: args.state.instructions_1,
+                              size_enum: 10, alignment_enum: 1,
+                              r: 0, g: 200, b: 255, a: 255, font: "fonts/manaspc.ttf" }
+
+    args.outputs.labels  << { x: args.grid.w.half, y: args.grid.h.half - 25,
+                              text: args.state.instructions_2,
+                              size_enum: 10, alignment_enum: 1,
+                              r: 0, g: 200, b: 255, a: 255, font: "fonts/manaspc.ttf" }
+
+    args.outputs.labels  << { x: args.grid.w.half, y: args.grid.h.half - 75,
+                              text: args.state.welcome,
+                              size_enum: 10, alignment_enum: 1,
+                              r: 255, g: 200, b: 255, a: 255, font: "fonts/manaspc.ttf" }
+
+    args.outputs.solids  << { x: args.state.border_corner_x, y: args.state.border_corner_y, 
+                              w: args.state.border_width, h: args.state.border_height, 
+                              r: 0, g: 0, b: 0,a: 200 }
+
+    if args.inputs.keyboard.key_down.enter
+      $gtk.reset
+      args.state.count_down = 20 * 60
+      return
+    end
+  end
+
   # check if it's game over. if so, then render game over
   # otherwise render the current time left
   if game_over? args
     # render label "Game over!"
-    args.outputs.primitives << { x: args.grid.w.half,
-                                 y: args.grid.h.half + 50,
+    args.outputs.primitives << { x: args.grid.w.half, y: args.grid.h.half + 75,
                                  text: "Game over!",
-                                 size_enum: 10,
-                                 alignment_enum: 1,
-                                 r: 255,
-                                 g: 0,
-                                 b: 0,
-                                 a: 255,
+                                 size_enum: 10, alignment_enum: 1,
+                                 r: 255, g: 0, b: 0, a: 255,
                                  font: "fonts/manaspc.ttf" }.label
 
-    # render the score
-    args.outputs.labels  << { x: args.grid.w.half, y: args.grid.h.half,
+    # render total score
+    args.outputs.labels  << { x: args.grid.w.half, y: args.grid.h.half + 25,
                               text: "Total score: #{args.state.score}",
                               size_enum: 10, alignment_enum: 1,
                               r: 0, g: 0, b: 255, a: 255, font: "fonts/manaspc.ttf" }
 
-    # render the label "Press r to start over"
-    args.outputs.labels  << { x: args.grid.w.half, y: args.grid.h.half - 50,
-                              text: "(Press r to start over)",
+    # render label "(Press r to start over)"
+    args.outputs.labels  << { x: args.grid.w.half, y: args.grid.h.half - 25,
+                              text: "Press r to start over",
                               size_enum: 10, alignment_enum: 1,
                               r: 0, g: 200, b: 255, a: 255, font: "fonts/manaspc.ttf" }
+
+    # render label "(Press r to start over)"
+    args.outputs.labels  << { x: args.grid.w.half, y: args.grid.h.half - 75,
+                              text: "Press enter to start over",
+                              size_enum: 10, alignment_enum: 1,
+                              r: 0, g: 200, b: 200, a: 255, font: "fonts/manaspc.ttf" }
   else
-    args.outputs.labels  << { x: args.grid.w.half, y: args.grid.h - 10,
-                              text: args.state.instructions,
-                              alignment_enum: 1 }
+    if !start_game? args
+      args.outputs.labels  << { x: args.grid.w.half,
+                                y: args.grid.h - 40,
+                                text: "time left: #{(args.state.count_down.idiv 60) + 1}",
+                                alignment_enum: 1 }
 
-    args.outputs.labels  << { x: args.grid.w.half,
-                              y: args.grid.h - 40,
-                              text: "time left: #{(args.state.count_down.idiv 60) + 1}",
-                              alignment_enum: 1 }
+      # render the score
+      args.outputs.labels  << { x: args.grid.w.half, y: args.grid.h - 70,
+                                text: "score: #{args.state.score}",
+                                alignment_enum: 1 }
 
-    # render the score
-    args.outputs.labels  << { x: args.grid.w.half, y: args.grid.h - 70,
-                              text: "score: #{args.state.score}",
-                              alignment_enum: 1 }
+      # render the target
+      args.outputs.sprites << { x: args.state.target.x, y: args.state.target.y,
+                                w: args.state.target.w, h: args.state.target.h,
+                                path: 'sprites/icon.png' }
+    end
   end
-
-  # render the target
-  args.outputs.sprites << { x: args.state.target.x,
-                            y: args.state.target.y,
-                            w: args.state.target.w,
-                            h: args.state.target.h,
-                            path: 'sprites/icon.png' }
 
   # render the border
   args.outputs.borders << { x: args.state.border_corner_x, 
@@ -125,11 +160,17 @@ def tick args
   # ====================================================
   # run simulation
   # ====================================================
-
-  # count down calculation
-  # substract one to each frame
-  args.state.count_down -= 1
-  args.state.count_down = -1 if args.state.count_down < -1
+  # if !args.state.count_down > 20 * 60 
+  if !start_game? args
+    # count down calculation
+    # if you look at the label "time left" we are doing a full division of the countdown:
+    #   args.state.count_down.idiv 60
+    # which means that we are dividing the count_down by 60 at every frame and getting the integer portion
+    # 1150/60 = 19
+    # 1130/60 = 18
+    args.state.count_down -= 1
+    args.state.count_down = -1 if args.state.count_down < -1
+  end
 
   # ====================================================
   # process player input
@@ -221,6 +262,11 @@ def tick args
     # if r is pressed, reset the game
     if args.inputs.keyboard.key_down.r
       $gtk.reset
+      args.state.count_down = 20 * 60
+      return
+    elsif args.inputs.keyboard.key_down.enter
+      $gtk.reset
+      args.state.count_down = 21 * 60
       return
     end
   end
@@ -249,6 +295,10 @@ end
 
 def game_over? args
   args.state.count_down < 0
+end
+
+def start_game? args
+  args.state.count_down == 21 * 60
 end
 
 $gtk.reset
