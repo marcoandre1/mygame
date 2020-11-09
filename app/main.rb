@@ -376,17 +376,35 @@ def tick args
 
     # keep the dragon flying in the good direction when game over
     if args.state.dir_x < 0
-      args.outputs.sprites << { x: args.state.player.x,
-                                y: args.state.player.y,
-                                w: args.state.player.w,
-                                h: args.state.player.h,
-                                path: "sprites/dragon-left-#{args.state.sprite_frame}.png" }
+      # check if dead
+      if args.state.player_life == 0
+        args.outputs.sprites << { x: args.state.player.x,
+                                  y: args.state.player.y,
+                                  w: args.state.player.w,
+                                  h: args.state.player.h,
+                                  path: "sprites/dragon_die_left.png" }
+      else
+        args.outputs.sprites << { x: args.state.player.x,
+                                  y: args.state.player.y,
+                                  w: args.state.player.w,
+                                  h: args.state.player.h,
+                                  path: "sprites/dragon-left-#{args.state.sprite_frame}.png" }
+      end
     else
-      args.outputs.sprites << { x: args.state.player.x,
-                                y: args.state.player.y,
-                                w: args.state.player.w,
-                                h: args.state.player.h,
-                                path: "sprites/dragon-right-#{args.state.sprite_frame}.png" }
+      # check if dead
+      if args.state.player_life == 0
+        args.outputs.sprites << { x: args.state.player.x,
+                                  y: args.state.player.y,
+                                  w: args.state.player.w,
+                                  h: args.state.player.h,
+                                  path: "sprites/dragon_die_right.png" }
+      else
+        args.outputs.sprites << { x: args.state.player.x,
+                                  y: args.state.player.y,
+                                  w: args.state.player.w,
+                                  h: args.state.player.h,
+                                  path: "sprites/dragon-right-#{args.state.sprite_frame}.png" }
+      end
     end
 
     # if r is pressed, reset the game

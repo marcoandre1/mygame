@@ -1,6 +1,6 @@
 devid=meltinglight
 devtitle=Marco E
-gameid=DragonQuest
-gametitle=Dragon Quest on steroids
+gameid=dragon-quest-rush
+gametitle=Dragon Quest Rush
 version=0.1
 icon=metadata/icon.png
