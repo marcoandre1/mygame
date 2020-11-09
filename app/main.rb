@@ -60,6 +60,9 @@ def tick args
   # set the player maxium speed
   args.state.player_maximum_speed ||= 10
 
+  # set the player maxium speed
+  args.state.player_life ||= 100
+
   # set the score and the score to win
   args.state.score        ||= 0
   args.state.score_win    ||= 10
@@ -72,6 +75,9 @@ def tick args
 
   # sprite frame
   args.state.sprite_frame = args.state.tick_count.idiv(4).mod(6)
+
+  # sprite frame
+  args.state.guard_frame = args.state.tick_count.idiv(30).mod(2)
 
   # set direction speed
   args.state.dir_x ||= 0
@@ -88,8 +94,8 @@ def tick args
   args.state.target_y ||= args.state.border_corner_y + (rand (args.state.border_height - args.state.player_height))
 
   # set y coordinate of the left guard and the right guard
-  args.state.guard_left_y  ||= 10
-  args.state.guard_right_y ||= -10
+  args.state.guard_left_y  ||= 5
+  args.state.guard_right_y ||= -5
 
   # ====================================================
   # render the game
@@ -160,12 +166,21 @@ def tick args
                                    r: 0, g: 255, b: 0, a: 255,
                                    font: "fonts/manaspc.ttf" }.label
     else
-      # render label "Game over!"
-      args.outputs.primitives << { x: args.grid.w.half, y: args.grid.h.half + 75,
-                                   text: "Game over! You loose!",
-                                   size_enum: 10, alignment_enum: 1,
-                                   r: 255, g: 0, b: 0, a: 255,
-                                   font: "fonts/manaspc.ttf" }.label
+      #check if player is dead
+      if args.state.player_life == 0
+        args.outputs.primitives << { x: args.grid.w.half, y: args.grid.h.half + 75,
+                                     text: "Game over! You are dead!",
+                                     size_enum: 10, alignment_enum: 1,
+                                     r: 255, g: 0, b: 0, a: 255,
+                                     font: "fonts/manaspc.ttf" }.label
+      else
+        # render label "Game over!"
+        args.outputs.primitives << { x: args.grid.w.half, y: args.grid.h.half + 75,
+                                     text: "Game over! You lose!",
+                                     size_enum: 10, alignment_enum: 1,
+                                     r: 255, g: 0, b: 0, a: 255,
+                                     font: "fonts/manaspc.ttf" }.label
+      end
     end
 
     # render total DragonRuby icons
@@ -208,6 +223,12 @@ def tick args
                                 text: "Time left: #{(args.state.count_down.idiv 60) + 1}",
                                 alignment_enum: 0 }
 
+      # show dragon life label
+      args.outputs.labels  << { x: args.grid.left.shift_right(10),
+                                y: args.grid.h - 100,
+                                text: "Life: ",
+                                alignment_enum: 0 }
+
       # render game background
       args.outputs.sprites << [args.state.border_corner_x, args.state.border_corner_y, args.state.border_width, args.state.border_height, 'sprites/background.png']
       args.outputs.sprites << [args.state.border_corner_x, args.state.border_corner_y, args.state.border_width, args.state.border_height, 'sprites/parallax_back.png']
@@ -218,6 +239,8 @@ def tick args
       end
       args.outputs.sprites << [args.grid.left.shift_right(10), args.grid.h - 60, 220, 20, 'sprites/square-gray.png', 0, 200]
       args.outputs.sprites << [args.grid.left.shift_right(10), args.grid.h - 90, 130, 20, 'sprites/square-gray.png', 0, 200]
+      args.outputs.sprites << [args.grid.left.shift_right(10), args.grid.h - 120, 50, 20, 'sprites/square-gray.png', 0, 200]
+      args.outputs.sprites << [args.grid.left.shift_right(70), args.grid.h - 120, args.state.player_life, 20, 'sprites/square-green.png', 0, 200]
 
       # render the target
       args.outputs.sprites << { x: args.state.target.x, y: args.state.target.y,
@@ -227,12 +250,12 @@ def tick args
       # render the left guard
       args.outputs.sprites << { x: args.state.guard_left.x, y: args.state.guard_left.y,
                                 w: args.state.guard_left.w, h: args.state.guard_left.h,
-                                path: 'sprites/circle-blue.png' }
+                                path: "sprites/guard_#{args.state.guard_frame}.png" }
 
       # render the left guard
       args.outputs.sprites << { x: args.state.guard_right.x, y: args.state.guard_right.y,
                                 w: args.state.guard_right.w, h: args.state.guard_right.h,
-                                path: 'sprites/circle-green.png' }
+                                path: "sprites/guard_#{args.state.guard_frame}.png" }
     end
   end
 
@@ -404,6 +427,28 @@ def tick args
 
         # move the goal to a random location
         args.state.target = { x: (args.state.target_x), y: (args.state.target_y), w: args.state.target_width, h: args.state.target_height }
+      end
+    end
+
+    # if the player hits the left guard
+    if args.state.player.intersect_rect? args.state.guard_left
+      # increment the goal
+      args.state.player_life -= 1
+
+      # check if dead
+      if args.state.player_life == 0
+        args.state.count_down = 0
+      end
+    end
+
+    # if the player hits the right guard
+    if args.state.player.intersect_rect? args.state.guard_right
+      # increment the goal
+      args.state.player_life -= 1
+
+      # check if dead
+      if args.state.player_life == 0
+        args.state.count_down = 0
       end
     end
   end
