@@ -76,8 +76,14 @@ def tick args
   # sprite frame
   args.state.sprite_frame = args.state.tick_count.idiv(4).mod(6)
 
-  # sprite frame
+  # guard frame
   args.state.guard_frame = args.state.tick_count.idiv(30).mod(2)
+
+  # life frame
+  args.state.life_frame = 5 * (args.state.tick_count.idiv(5).mod(2) + 1)
+
+  # count down life
+  args.state.count_down_life ||= 0
 
   # set direction speed
   args.state.dir_x ||= 0
@@ -240,7 +246,22 @@ def tick args
       args.outputs.sprites << [args.grid.left.shift_right(10), args.grid.h - 60, 220, 20, 'sprites/square-gray.png', 0, 200]
       args.outputs.sprites << [args.grid.left.shift_right(10), args.grid.h - 90, 130, 20, 'sprites/square-gray.png', 0, 200]
       args.outputs.sprites << [args.grid.left.shift_right(10), args.grid.h - 120, 50, 20, 'sprites/square-gray.png', 0, 200]
-      args.outputs.sprites << [args.grid.left.shift_right(70), args.grid.h - 120, args.state.player_life, 20, 'sprites/square-green.png', 0, 200]
+
+      if (args.state.player.intersect_rect? args.state.guard_left) || (args.state.player.intersect_rect? args.state.guard_right)
+        args.outputs.sprites << [args.grid.left.shift_right(70), args.grid.h - 120, args.state.player_life, 20, 'sprites/square-red.png', 0, 200]
+        args.state.count_down_life = 4 * 60
+      else
+        args.outputs.sprites << [args.grid.left.shift_right(70), args.grid.h - 120, args.state.player_life, 20, 'sprites/square-green.png', 0, 200]
+      end
+
+      if args.state.count_down_life != 0
+        args.state.count_down_life -= 4
+        args.state.count_down_life = -1 if args.state.count_down_life < -1
+        args.outputs.labels  << { x: args.grid.w.half - 10 + args.state.life_frame, y: args.grid.h.half + 10 + args.state.life_frame,
+                              text: "-#{args.state.player_life}",
+                              size_enum: 20, alignment_enum: 1,
+                              r: 255, g: 0, b: 0, a: args.state.count_down_life, font: "fonts/manaspc.ttf" }
+      end
 
       # render the target
       args.outputs.sprites << { x: args.state.target.x, y: args.state.target.y,
@@ -250,12 +271,12 @@ def tick args
       # render the left guard
       args.outputs.sprites << { x: args.state.guard_left.x, y: args.state.guard_left.y,
                                 w: args.state.guard_left.w, h: args.state.guard_left.h,
-                                path: "sprites/guard_#{args.state.guard_frame}.png" }
+                                path: "sprites/guard-HD-#{args.state.guard_frame}.png" }
 
       # render the left guard
       args.outputs.sprites << { x: args.state.guard_right.x, y: args.state.guard_right.y,
                                 w: args.state.guard_right.w, h: args.state.guard_right.h,
-                                path: "sprites/guard_#{args.state.guard_frame}.png" }
+                                path: "sprites/guard-HD-#{args.state.guard_frame}.png" }
     end
   end
 
