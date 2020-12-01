@@ -9,7 +9,7 @@ def tick args
   # ====================================================
 
   # ruby has an operator called ||= which means "only initialize this if it's nil"
-  args.state.count_down   ||= 21 * 60 # set the count down to 20 seconds
+  args.state.count_down   ||= 25 * 60 # set the count down to 20 seconds
   # the game renders in 60 fps: 20s * 60fps = 1200 frames
 
   # set the width and the height of the target
@@ -134,10 +134,10 @@ def tick args
                               size_enum: 10, alignment_enum: 1,
                               r: 255, g: 200, b: 255, a: 255, font: "fonts/manaspc.ttf" }
 
-    # render menu background
+    # render black menu background
     args.outputs.solids  << { x: args.state.border_corner_x, y: args.state.border_corner_y, 
                               w: args.state.border_width, h: args.state.border_height, 
-                              r: 0, g: 0, b: 0,a: 200 }
+                              r: 0, g: 0, b: 0, a: 200 }
 
     #     [ X ,  Y,    TEXT,   SIZE, ALIGN, RED, GREEN, BLUE, ALPHA, FONT STYLE]
     args.outputs.labels << [args.grid.left.shift_right(10), args.grid.bottom.shift_up(95), "Code:   https://github.com/marcoandre1/mygame", 3, 0, 255, 255, 255, 200]
@@ -155,7 +155,7 @@ def tick args
     if args.inputs.keyboard.key_down.enter
       score_win_memory = args.state.score_win
       $gtk.reset
-      args.state.count_down = 20 * 60
+      args.state.count_down = 24 * 60
       args.state.score_win = score_win_memory
       return
     end
@@ -209,7 +209,7 @@ def tick args
   else
     # game is not over
     # check if we are in the game menu
-    if !game_menu? args
+    if !game_menu? args and game_start? args
       # Show warning label is maximum speed is over 10
       if args.state.player_maximum_speed > 10
         args.outputs.labels  << { x: args.grid.left.shift_right(10),
@@ -277,6 +277,18 @@ def tick args
       args.outputs.sprites << { x: args.state.guard_right.x, y: args.state.guard_right.y,
                                 w: args.state.guard_right.w, h: args.state.guard_right.h,
                                 path: "sprites/guard-HD-#{args.state.guard_frame}.png" }
+
+      args.outputs.sprites << { x: 200, y: 200,
+                                w: 100, h: 100,
+                                path: "sprites/mini-dragon.png" }
+
+      args.outputs.sprites << { x: 400, y: 400,
+                                w: 100, h: 100,
+                                path: "sprites/heart.png" }
+
+      args.outputs.sprites << { x: 500, y: 200,
+                                w: 75, h: 75,
+                                path: "sprites/clock.png" }
     end
   end
 
@@ -307,8 +319,8 @@ def tick args
   # ====================================================
   # process player input
   # ====================================================
-  # if it isn't game over let them move
-  if !game_over? args
+  # if it isn't game over and the game has started let them move (0 > args.state.count_down <= 20 * 60)
+  if !game_over? args and game_start? args
     # collision with a wall will make the guard bounce back
     if args.state.guard_left.y < args.state.border_corner_y
       args.state.guard_left_y *= -1
@@ -388,60 +400,86 @@ def tick args
     args.state.player.x += args.state.dir_x
     args.state.player.y += args.state.dir_y
   else
-    # render game over background
-    args.outputs.sprites << [args.state.border_corner_x, args.state.border_corner_y, args.state.border_width, args.state.border_height, 'sprites/background.png']
-    args.outputs.sprites << [args.state.border_corner_x, args.state.border_corner_y, args.state.border_width, args.state.border_height, 'sprites/parallax_back.png']
-    args.outputs.sprites << [args.state.border_corner_x, args.state.border_corner_y, args.state.border_width, args.state.border_height, 'sprites/parallax_middle.png']
-    args.outputs.sprites << [args.state.border_corner_x, args.state.border_corner_y, args.state.border_width, args.state.border_height, 'sprites/parallax_front.png']
-    args.outputs.sprites << [args.state.border_corner_x, args.state.border_corner_y, args.state.border_width, args.state.border_height, 'sprites/square-gray.png', 0, 128]
+    # args.state.count_down is inferior to 0 and greater than 20 * 60
+    # check if game over (means args.state.count_down < 0)
+    if game_over? args
+      # render game over background
+      args.outputs.sprites << [args.state.border_corner_x, args.state.border_corner_y, args.state.border_width, args.state.border_height, 'sprites/background.png']
+      args.outputs.sprites << [args.state.border_corner_x, args.state.border_corner_y, args.state.border_width, args.state.border_height, 'sprites/parallax_back.png']
+      args.outputs.sprites << [args.state.border_corner_x, args.state.border_corner_y, args.state.border_width, args.state.border_height, 'sprites/parallax_middle.png']
+      args.outputs.sprites << [args.state.border_corner_x, args.state.border_corner_y, args.state.border_width, args.state.border_height, 'sprites/parallax_front.png']
+      args.outputs.sprites << [args.state.border_corner_x, args.state.border_corner_y, args.state.border_width, args.state.border_height, 'sprites/square-gray.png', 0, 128]
 
-    # keep the dragon flying in the good direction when game over
-    if args.state.dir_x < 0
-      # check if dead
-      if args.state.player_life == 0
-        args.outputs.sprites << { x: args.state.player.x,
-                                  y: args.state.player.y,
-                                  w: args.state.player.w,
-                                  h: args.state.player.h,
-                                  path: "sprites/dragon_die_left.png" }
+      # keep the dragon flying in the good direction when game over
+      if args.state.dir_x < 0
+        # check if dead
+        if args.state.player_life == 0
+          args.outputs.sprites << { x: args.state.player.x,
+                                    y: args.state.player.y,
+                                    w: args.state.player.w,
+                                    h: args.state.player.h,
+                                    path: "sprites/dragon_die_left.png" }
+        else
+          args.outputs.sprites << { x: args.state.player.x,
+                                    y: args.state.player.y,
+                                    w: args.state.player.w,
+                                    h: args.state.player.h,
+                                    path: "sprites/dragon-left-#{args.state.sprite_frame}.png" }
+        end
       else
-        args.outputs.sprites << { x: args.state.player.x,
-                                  y: args.state.player.y,
-                                  w: args.state.player.w,
-                                  h: args.state.player.h,
-                                  path: "sprites/dragon-left-#{args.state.sprite_frame}.png" }
+        # check if dead
+        if args.state.player_life == 0
+          args.outputs.sprites << { x: args.state.player.x,
+                                    y: args.state.player.y,
+                                    w: args.state.player.w,
+                                    h: args.state.player.h,
+                                    path: "sprites/dragon_die_right.png" }
+        else
+          args.outputs.sprites << { x: args.state.player.x,
+                                    y: args.state.player.y,
+                                    w: args.state.player.w,
+                                    h: args.state.player.h,
+                                    path: "sprites/dragon-right-#{args.state.sprite_frame}.png" }
+        end
+      end
+
+      # if r is pressed, reset the game
+      # else if enter is pressed, return to game menu
+      if args.inputs.keyboard.key_down.r
+        score_win_memory = args.state.score_win
+        $gtk.reset
+        args.state.count_down = 20 * 60
+        args.state.score_win = score_win_memory
+        return
+      elsif args.inputs.keyboard.key_down.enter
+        score_win_memory = args.state.score_win
+        $gtk.reset
+        args.state.count_down = 25 * 60
+        args.state.score_win = score_win_memory
+        return
       end
     else
-      # check if dead
-      if args.state.player_life == 0
-        args.outputs.sprites << { x: args.state.player.x,
-                                  y: args.state.player.y,
-                                  w: args.state.player.w,
-                                  h: args.state.player.h,
-                                  path: "sprites/dragon_die_right.png" }
-      else
-        args.outputs.sprites << { x: args.state.player.x,
-                                  y: args.state.player.y,
-                                  w: args.state.player.w,
-                                  h: args.state.player.h,
-                                  path: "sprites/dragon-right-#{args.state.sprite_frame}.png" }
-      end
-    end
+      # game is not over
+      # check if we are in game prelude (means args.state.count_down between 20 and 25)
+      if game_prelude? args
+        # render prelude background
+        args.outputs.sprites << [args.state.border_corner_x, args.state.border_corner_y, args.state.border_width, args.state.border_height, 'sprites/D4yFN_XWsAAy7WZ.jpg']
 
-    # if r is pressed, reset the game
-    # else if enter is pressed, return to game menu
-    if args.inputs.keyboard.key_down.r
-      score_win_memory = args.state.score_win
-      $gtk.reset
-      args.state.count_down = 20 * 60
-      args.state.score_win = score_win_memory
-      return
-    elsif args.inputs.keyboard.key_down.enter
-      score_win_memory = args.state.score_win
-      $gtk.reset
-      args.state.count_down = 21 * 60
-      args.state.score_win = score_win_memory
-      return
+        # render label "Game loading!"
+        args.outputs.primitives << { x: args.grid.w.half, y: args.grid.h.half + 75,
+                                   text: "Game loading!",
+                                   size_enum: 10, alignment_enum: 1,
+                                   r: 0, g: 255, b: 0, a: 255,
+                                   font: "fonts/manaspc.ttf" }.label
+
+        # show count down to start game
+        args.outputs.labels  << { x: args.grid.w.half,
+                                  y: args.grid.h - 70,
+                                  size_enum: 10,
+                                  text: "#{((args.state.count_down.idiv 60) + 1) - 21}",
+                                  alignment_enum: 0,
+                                  font: "fonts/manaspc.ttf" }
+      end
     end
   end
 
@@ -450,7 +488,7 @@ def tick args
   # ====================================================
 
   # calculate new score if the player is at goal
-  if !game_over? args
+  if !game_over? args and game_start? args
     # if the player is at the goal, then move the goal
     if args.state.player.intersect_rect? args.state.target
       # increment the goal
@@ -498,7 +536,15 @@ def game_over? args
 end
 
 def game_menu? args
-  args.state.count_down == 21 * 60
+  args.state.count_down == 25 * 60
+end
+
+def game_start? args
+  args.state.count_down <= 20 * 60
+end
+
+def game_prelude? args
+  args.state.count_down < 25 * 60
 end
 
 $gtk.reset
